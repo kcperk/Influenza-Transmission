@@ -8,9 +8,7 @@
 // Kernel that executes on the CUDA device
 __global__ void square_array(float *a, int N)
 {
-  int ind = blockDim.x*blockIdx.x + threadIdx.x;
-  if (ind < N)
-  	a[ind] = a[ind]*a[ind];
+  a[5] = 50;
 }
  
 // main routine that executes on the host
