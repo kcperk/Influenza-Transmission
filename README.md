@@ -1,4 +1,4 @@
-# Influenza Tranmission CUDA Simulation 
+# Influenza Transmission CUDA Simulation 
 ## Kevin & Tarun
 
 ###Serial Compilation:
