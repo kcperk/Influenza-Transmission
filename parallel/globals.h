@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <cuda.h>
 #include <stdlib.h>
+#include <curand.h>
+#include <curand_kernel.h>
+
 
 #define INIT_NUMBER_OF_NODES 10
 #define MAX_NUMBER_OF_NODES 30
