@@ -10,8 +10,8 @@
 
 #define INIT_NUMBER_OF_NODES 10
 #define MAX_NUMBER_OF_NODES 30
-#define MIN_NUMBER_OF_NEIGHBORS 2
-#define MAX_NUMBER_OF_NEIGHBORS 7
+#define MIN_NUMBER_OF_NEIGHBORS 1
+#define MAX_NUMBER_OF_NEIGHBORS 4
 
 #define MAX_X 200
 #define MAX_Y 200
@@ -51,3 +51,4 @@ typedef struct
 
 
 #endif
+
