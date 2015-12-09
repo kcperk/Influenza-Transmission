@@ -18,4 +18,36 @@
 
 #define NUMBER_OF_DAYS 30
 
+/* Infection Status */
+
+#define UNINFECTED 0
+
+/* Cannot Infect Others 2 Day Period. 90% probablility of infection */
+#define LATENT 1 
+
+/* Cannot Infect Others 1 Day Period. 10% */
+#define INCUBATION 2
+
+/* Can Infect Others 3-5 Day Period */
+#define INFECTIOUS 3
+
+/* Can Infect Others 2 Day Period */
+#define ASYMPT 4 
+
+/* Has recovered, Cannot be infected Again*/
+#define RECOVERED 5
+
+typedef struct
+{
+	int	isActive;
+	int id;
+	int numberOfNeighbors;
+	int nodeStatus;
+
+	int dayInfected;
+	int neighborId[MAX_NUMBER_OF_NEIGHBORS];
+
+} Node;
+
+
 #endif
