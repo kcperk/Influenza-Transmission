@@ -7,10 +7,10 @@ __device__ int numberOfDays = NUMBER_OF_DAYS;
 __global__ void node(Node * nodeInfoList, int seed)
 {
   /* threadIdx represents the ID of the thread */
-  int i;
+  int i,j;
   int tx = threadIdx.x;
   int numberOfNeighborsToLookAt;
-  int neighborIndex;
+  int neighborIndex, index;
 
   int storedNodeStatus[MAX_NUMBER_OF_NODES];
   curandState_t state;
@@ -70,17 +70,51 @@ __global__ void node(Node * nodeInfoList, int seed)
 	    	}
     	}
 
+
     }
 
     __syncthreads();
+    
+    
+    if(nodeInfoList[tx].isActive == 1)
+    {
+    
+	/* a chance for node deletion */
+    if ( (curand(&state) % 100) < 5 )
+    {
+    
+    	//printf("\nRemoving Node %d",tx);
+    
+    	nodeInfoList[tx].isActive = 0;
+    	nodeInfoList[tx].id = 0;
+		nodeInfoList[tx].nodeStatus = UNINFECTED;
 
+    	for(i = 0; i < MAX_NUMBER_OF_NEIGHBORS; i++)
+    		nodeInfoList[tx].neighborId[i] = -1;
+
+    	nodeInfoList[tx].numberOfNeighbors = 0;
+    	
+    	atomicAdd(&currentNumberOfNodes,-1);
+
+    }
+
+	}
+
+	__syncthreads();
+	
     if ( tx == 0 ) {
 
-    printf("\n \n Day %d \n", NUMBER_OF_DAYS - numberOfDays);
+    printf("\n \nDay %d Number of Nodes: %d\n",NUMBER_OF_DAYS - numberOfDays,currentNumberOfNodes);
 
     for(i = 0; i < MAX_NUMBER_OF_NODES; i++)
   	{
-  		printf("Node %d is %d", i, nodeInfoList[i].nodeStatus);
+  		printf("Node %d is ", i);
+  		
+  		if(nodeInfoList[i].isActive) 			
+ 	 		printf("active and ");
+ 	 	else
+ 	 		printf("inactive and ");		
+  		
   		switch(nodeInfoList[i].nodeStatus)
   		{
   			case UNINFECTED:
@@ -164,7 +198,43 @@ __global__ void node(Node * nodeInfoList, int seed)
 		}
 
 	}
+	
+	
+	if(nodeInfoList[tx].isActive == 0) {
+	
+		/* a chance for node addition */
+		if ( (curand(&state) % 100) < 5 )
+		{
+			//printf("\nAdding Node %d", tx);
+		
+			nodeInfoList[tx].isActive = 1;
+			nodeInfoList[tx].nodeStatus = UNINFECTED;
+	
+			nodeInfoList[tx].numberOfNeighbors = (curand(&state) % (MAX_NUMBER_OF_NEIGHBORS + 1));
 
+			for(j = 0; j < MAX_NUMBER_OF_NODES; j++)
+	  			nodeInfoList[tx].neighborId[j] = -1;
+
+	  		for(j = 0; j < MAX_NUMBER_OF_NEIGHBORS; j++)
+			{
+		  		do {
+		  			index = curand(&state) % currentNumberOfNodes;
+
+		  			if(nodeInfoList[tx].neighborId[index] != -1)
+		  				index = -1;
+			  		
+			  	} while (index == -1);
+
+			  	nodeInfoList[tx].neighborId[index] = 1;
+			}
+			
+			atomicAdd(&currentNumberOfNodes,1); 
+
+		}
+		
+	
+	}
+	
 	__syncthreads();
 
   }

@@ -10,8 +10,8 @@
 
 #define INIT_NUMBER_OF_NODES 10
 #define MAX_NUMBER_OF_NODES 30
-#define MIN_NUMBER_OF_NEIGHBORS 1
-#define MAX_NUMBER_OF_NEIGHBORS 4
+#define MIN_NUMBER_OF_NEIGHBORS 2
+#define MAX_NUMBER_OF_NEIGHBORS 5
 
 #define MAX_X 200
 #define MAX_Y 200
@@ -45,7 +45,7 @@ typedef struct
 	int nodeStatus;
 
 	int dayInfected;
-	int neighborId[MAX_NUMBER_OF_NEIGHBORS];
+	int neighborId[MAX_NUMBER_OF_NODES];
 
 } Node;
 
