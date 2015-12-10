@@ -11,6 +11,8 @@ __global__ void node(Node * nodeInfoList, int seed)
   int tx = threadIdx.x;
   int numberOfNeighborsToLookAt;
   int neighborIndex, index;
+  
+  float numUnInf, numLat, numInf, numInc, numAsym, numRec;
 
   int storedNodeStatus[MAX_NUMBER_OF_NODES];
   curandState_t state;
@@ -102,44 +104,72 @@ __global__ void node(Node * nodeInfoList, int seed)
 
 	__syncthreads();
 	
-    if ( tx == 0 ) {
+    if ( tx == 0) {
 
     printf("\n \nDay %d Number of Nodes: %d\n",NUMBER_OF_DAYS - numberOfDays,currentNumberOfNodes);
 
+	numUnInf = 0;
+  	 	numLat = 0;
+  	 	numInf = 0;
+  	 	numInc = 0;
+  	 	numAsym = 0;
+  	 	numRec = 0;
+
+
     for(i = 0; i < MAX_NUMBER_OF_NODES; i++)
   	{
-  		printf("Node %d is ", i);
+  		  	
+  		//printf("Node %d is ", i);
   		
+  		/*
   		if(nodeInfoList[i].isActive) 			
  	 		printf("active and ");
  	 	else
  	 		printf("inactive and ");		
-  		
+  		*/
   		switch(nodeInfoList[i].nodeStatus)
   		{
   			case UNINFECTED:
-  				printf(" is uninfected. \n");
+  				numUnInf++;
 			break;
 			case LATENT:
-				printf(" is latent. \n");
+				numLat++;
 			break;
 			case INCUBATION:
-				printf(" is incubating. \n");
+				numInc++;
 			break;
 			case INFECTIOUS:
-				printf(" is infectious. \n");
+				numInf++;
 			break;
 			case ASYMPT:
-				printf(" is asymptotic. \n");
+				numAsym++;
 			break;
 			case RECOVERED:
-				printf(" is recovered. \n");
+				numRec++;
 			break;
 			default:
-				printf(" in invalid. \n");
+				
 			break;
   		}
+  	
   	}
+  	
+  	numUnInf /= MAX_NUMBER_OF_NODES;
+  	numLat /= MAX_NUMBER_OF_NODES;
+  	numInf /= MAX_NUMBER_OF_NODES;
+  	numInc /= MAX_NUMBER_OF_NODES;
+  	numAsym /= MAX_NUMBER_OF_NODES;
+  	numRec /= MAX_NUMBER_OF_NODES;
+  	
+  	numUnInf *= 100;
+  	numLat *= 100;
+  	numInf *= 100;
+  	numInc *= 100;
+  	numAsym *= 100;
+  	numRec *= 100;
+  	
+  	printf("Number Uninfected: %f, Num Latent %f, Num Inf %f, Num Inc %f, Num Asym %f, Num Rec %f", numUnInf, numLat, numInf, numInc, numAsym, numRec);
+  	
 
    }
 
@@ -311,8 +341,8 @@ int main(void)
   // for(j = 0; j < MAX_NUMBER_OF_NEIGHBORS; j++)
   //   printf("[%d][%d] = %d\n", i, j,neighborIDs[i][j]);
 
-  dim3 DimGrid(1,1,1);
-  dim3 DimBlock(MAX_NUMBER_OF_NODES,1,1);
+  dim3 DimGrid(ceil(MAX_NUMBER_OF_NODES/512.0),1,1);
+  dim3 DimBlock(512,1,1);
 
   initGraph<<<DimGrid,DimBlock>>>(deviceNodeInfoList, time(NULL));
 
