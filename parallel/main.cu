@@ -1,7 +1,6 @@
 #include "globals.h"
 
 __device__ int currentNumberOfNodes = INIT_NUMBER_OF_NODES;
-__device__ int numberOfDays = NUMBER_OF_DAYS;
 
 __device__ int numRem[NUMBER_OF_DAYS];
 __device__ float numUnInf[NUMBER_OF_DAYS];
@@ -17,10 +16,10 @@ __global__ void node(Node * nodeInfoList, int seed)
 {
   /* threadIdx represents the ID of the thread */
   int i,j;
-  int tx = threadIdx.x;
+  int tx = threadIdx.x + blockDim.x * blockIdx.x;
   int numberOfNeighborsToLookAt;
   int neighborIndex, index;
-  
+  int numberOfDays = 0;
   
   int storedNodeStatus[MAX_NUMBER_OF_NODES];
   curandState_t state;
@@ -29,7 +28,7 @@ __global__ void node(Node * nodeInfoList, int seed)
   curand_init(seed+(tx*34), 0, 0, &state);
   
   /* continues to loop until the number of days the simulation is set to run */
-  while(numberOfDays > 0) {
+  while(numberOfDays < NUMBER_OF_DAYS) {
 
   	for(i = 0; i < MAX_NUMBER_OF_NODES;i++)
   	{
@@ -52,7 +51,7 @@ __global__ void node(Node * nodeInfoList, int seed)
 	    		if ( nodeInfoList[tx].nodeStatus == UNINFECTED)
 	    		{	    
 	    			do {
-	  					neighborIndex = curand(&state) % INIT_NUMBER_OF_NODES;
+	  					neighborIndex = curand(&state) % currentNumberOfNodes;
 
 	  					if(nodeInfoList[tx].neighborId[neighborIndex] == -1)
 	  						neighborIndex = -1;
@@ -64,13 +63,13 @@ __global__ void node(Node * nodeInfoList, int seed)
 			    		if(curand(&state) % 100 < 90)
 			    		{
 			    			nodeInfoList[tx].nodeStatus = LATENT;
-			    			nodeInfoList[tx].dayInfected = NUMBER_OF_DAYS - numberOfDays;
+			    			nodeInfoList[tx].dayInfected = numberOfDays;
 			    		} 
 
 			    		if(curand(&state) % 100 < 10)
 			    		{
 			    			nodeInfoList[tx].nodeStatus = INCUBATION;
-			    			nodeInfoList[tx].dayInfected = NUMBER_OF_DAYS - numberOfDays;
+			    			nodeInfoList[tx].dayInfected = numberOfDays;
 			    		} 
 
 			    	}
@@ -89,12 +88,9 @@ __global__ void node(Node * nodeInfoList, int seed)
     if(nodeInfoList[tx].isActive == 1)
     {
     
-		/* a chance for node deletion */
-	    if ( (curand(&state) % 100) < 2 )
+		// a chance for node deletion
+	    if ( (curand(&state) % 800) < 2 )
 	    {
-	    
-	    	//printf("\nRemoving Node %d",tx);
-	    
 	    	nodeInfoList[tx].isActive = 0;
 	    	nodeInfoList[tx].id = 0;
 			nodeInfoList[tx].nodeStatus = UNINFECTED;
@@ -108,39 +104,45 @@ __global__ void node(Node * nodeInfoList, int seed)
 
 	    }
 
-	}
+	} 
 
 	__syncthreads();
 	
-   	
-	switch(nodeInfoList[tx].nodeStatus)
-	{
-		case UNINFECTED:
-			atomicAdd(&numUnInf[NUMBER_OF_DAYS - numberOfDays],1);
-		break;
-		case LATENT:
-			atomicAdd(&numLat[NUMBER_OF_DAYS - numberOfDays],1);
-		break;
-		case INCUBATION:
-			atomicAdd(&numInc[NUMBER_OF_DAYS - numberOfDays],1);
-		break;
-		case INFECTIOUS:
-			atomicAdd(&numInf[NUMBER_OF_DAYS - numberOfDays],1);
-		break;
-		case ASYMPT:
-			atomicAdd(&numAsym[NUMBER_OF_DAYS - numberOfDays],1);
-		break;
-		case RECOVERED:
-			atomicAdd(&numRec[NUMBER_OF_DAYS - numberOfDays],1);
-		break;
-		default:
+	if(tx == 0) {
+		
+		numRem[numberOfDays] = currentNumberOfNodes;
+	}
+	
+	if(nodeInfoList[tx].isActive == 1) {
+	
+		switch(nodeInfoList[tx].nodeStatus)
+		{
+			case UNINFECTED:
+				atomicAdd(&numUnInf[numberOfDays],1);
+			break;
+			case LATENT:
+				atomicAdd(&numLat[numberOfDays],1);
+			break;
+			case INCUBATION:
+				atomicAdd(&numInc[numberOfDays],1);
+			break;
+			case INFECTIOUS:
+				atomicAdd(&numInf[numberOfDays],1);
+			break;
+			case ASYMPT:
+				atomicAdd(&numAsym[numberOfDays],1);
+			break;
+			case RECOVERED:
+				atomicAdd(&numRec[numberOfDays],1);
+			break;
+			default:
 			
-		break;
+			break;
+		}
+	
 	}
   	
-  	__syncthreads();  
-  
-    numberOfDays--;
+ 	numberOfDays++;
 
     if(nodeInfoList[tx].isActive == 1)
     {
@@ -152,16 +154,15 @@ __global__ void node(Node * nodeInfoList, int seed)
 			break;
 			case LATENT:
 
-				if((NUMBER_OF_DAYS - numberOfDays) - nodeInfoList[tx].dayInfected >= 2)
+				if((numberOfDays) - nodeInfoList[tx].dayInfected >= 2)
 				{
-					//printf("sdfsdf\n");
 					nodeInfoList[tx].nodeStatus = INFECTIOUS;	
 				}
 
 			break;
 			case INCUBATION:
 
-				if((NUMBER_OF_DAYS - numberOfDays) - nodeInfoList[tx].dayInfected >= 1)
+				if((numberOfDays) - nodeInfoList[tx].dayInfected >= 1)
 				{
 					nodeInfoList[tx].nodeStatus = ASYMPT;	
 				}
@@ -169,7 +170,7 @@ __global__ void node(Node * nodeInfoList, int seed)
 			break;
 			case INFECTIOUS:
 
-				if((NUMBER_OF_DAYS - numberOfDays) - nodeInfoList[tx].dayInfected >= 5)
+				if((numberOfDays) - nodeInfoList[tx].dayInfected >= 5)
 				{
 					if( curand(&state) % 100 < (((NUMBER_OF_DAYS - numberOfDays) - nodeInfoList[tx].dayInfected)-5)*10 + 70)
 						nodeInfoList[tx].nodeStatus = RECOVERED;	
@@ -178,7 +179,7 @@ __global__ void node(Node * nodeInfoList, int seed)
 			break;
 			case ASYMPT:
 
-				if((NUMBER_OF_DAYS - numberOfDays) - nodeInfoList[tx].dayInfected >= 3)
+				if((numberOfDays) - nodeInfoList[tx].dayInfected >= 3)
 				{
 					if( curand(&state) % 100 < (((NUMBER_OF_DAYS - numberOfDays) - nodeInfoList[tx].dayInfected)-3)*10 + 70)
 						nodeInfoList[tx].nodeStatus = RECOVERED;	
@@ -196,14 +197,13 @@ __global__ void node(Node * nodeInfoList, int seed)
 
 	}
 	
+	__syncthreads();
 	
 	if(nodeInfoList[tx].isActive == 0) {
 	
-		/* a chance for node addition */
-		if ( (curand(&state) % 100) < 2 )
+		// a chance for node addition 
+		if ( (curand(&state) % 600) < 2 )
 		{
-			//printf("\nAdding Node %d", tx);
-		
 			nodeInfoList[tx].isActive = 1;
 			nodeInfoList[tx].nodeStatus = UNINFECTED;
 	
@@ -230,7 +230,7 @@ __global__ void node(Node * nodeInfoList, int seed)
 		}
 		
 	
-	}
+	} 
 	
 	__syncthreads();
 
@@ -241,7 +241,7 @@ __global__ void node(Node * nodeInfoList, int seed)
 
 __global__ void initGraph(Node * nodeInfoList, int seed) {
 
-	int tx = threadIdx.x;
+	int tx = threadIdx.x + blockDim.x * blockIdx.x;
 	curandState_t state;
 	int j, index;
 
@@ -249,7 +249,6 @@ __global__ void initGraph(Node * nodeInfoList, int seed) {
 
   	if(tx < INIT_NUMBER_OF_NODES) {
   		nodeInfoList[tx].isActive = 1;
-  		//from 0 to max
   		nodeInfoList[tx].numberOfNeighbors = (curand(&state) % (MAX_NUMBER_OF_NEIGHBORS + 1));
 
   		for(j = 0; j < MAX_NUMBER_OF_NODES; j++)
@@ -300,34 +299,37 @@ __global__ void initGraph(Node * nodeInfoList, int seed) {
 
 __global__ void printingRes() 
 {
-	int lNumberOfDays = NUMBER_OF_DAYS;
+	int numberOfDays = 0;
+	int nodeNumber;
 
 	if(threadIdx.x == 0)
 	{
 
-		while(lNumberOfDays > 0) {
-
-			numUnInf[NUMBER_OF_DAYS - lNumberOfDays] /= MAX_NUMBER_OF_NODES;
-	  		numLat[NUMBER_OF_DAYS - lNumberOfDays] /= MAX_NUMBER_OF_NODES;
-	 	 	numInf[NUMBER_OF_DAYS - lNumberOfDays] /= MAX_NUMBER_OF_NODES;
-	 	 	numInc[NUMBER_OF_DAYS - lNumberOfDays] /= MAX_NUMBER_OF_NODES;
-		  	numAsym[NUMBER_OF_DAYS - lNumberOfDays] /= MAX_NUMBER_OF_NODES;
-		  	numRec[NUMBER_OF_DAYS - lNumberOfDays] /= MAX_NUMBER_OF_NODES;
+		while(numberOfDays < 30) {
+		
+			nodeNumber = numRem[numberOfDays];
+		
+			numUnInf[numberOfDays] /= nodeNumber;
+	  		numLat[numberOfDays] /= nodeNumber;
+	 	 	numInf[numberOfDays] /= nodeNumber;
+	 	 	numInc[numberOfDays] /= nodeNumber;
+		  	numAsym[numberOfDays] /= nodeNumber;
+		  	numRec[numberOfDays] /= nodeNumber;
 	  	
-		  	numUnInf[NUMBER_OF_DAYS - numberOfDays] *= 100;
-	  		numLat[NUMBER_OF_DAYS - numberOfDays] *= 100;
-		  	numInf[NUMBER_OF_DAYS - numberOfDays] *= 100;
-		  	numInc[NUMBER_OF_DAYS - numberOfDays] *= 100;
-		  	numAsym[NUMBER_OF_DAYS - numberOfDays] *= 100;
-		  	numRec[NUMBER_OF_DAYS - numberOfDays] *= 100;
+		  	numUnInf[numberOfDays] *= 100;
+	  		numLat[numberOfDays] *= 100;
+		  	numInf[numberOfDays] *= 100;
+		  	numInc[numberOfDays] *= 100;
+		  	numAsym[numberOfDays] *= 100;
+		  	numRec[numberOfDays] *= 100;
 
-			printf("\n \nDay %d Number of Nodes: %d\n",NUMBER_OF_DAYS - lNumberOfDays,numRem[NUMBER_OF_DAYS - lNumberOfDays]);
+			printf("\n \nDay %d Number of Nodes: %d\n",numberOfDays,numRem[numberOfDays]);
 
-			printf("Number Uninfected: %f, Num Latent %f, Num Inf %f, Num Inc %f, Num Asym %f, Num Rec %f\n", numUnInf[NUMBER_OF_DAYS - lNumberOfDays],
-			 numLat[NUMBER_OF_DAYS - lNumberOfDays], numInf[NUMBER_OF_DAYS - lNumberOfDays], numInc[NUMBER_OF_DAYS - lNumberOfDays], numAsym[NUMBER_OF_DAYS - lNumberOfDays],
-			  numRec[NUMBER_OF_DAYS - lNumberOfDays]);
-	  	
-			lNumberOfDays--;
+			printf("Percent Uninfected: %f, Num Latent %f, Num Inf %f, Num Inc %f, Num Asym %f, Num Rec %f\n", numUnInf[numberOfDays],
+			 numLat[numberOfDays], numInf[numberOfDays], numInc[numberOfDays], numAsym[numberOfDays],
+			  numRec[numberOfDays]);
+			  
+			numberOfDays++;
 
 		}
 
@@ -346,7 +348,6 @@ int main(void)
   cudaMalloc( (void **) &deviceNodeInfoList,(MAX_NUMBER_OF_NODES)* sizeof(Node));
  
   cudaMemcpy(deviceNodeInfoList, hostNodeInfoList, (MAX_NUMBER_OF_NODES) * sizeof(Node), cudaMemcpyHostToDevice); 
-
 
   dim3 DimGrid( (int) ceil(MAX_NUMBER_OF_NODES/512.0),1,1);
   dim3 DimBlock(512,1,1);
