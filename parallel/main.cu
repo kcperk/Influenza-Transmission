@@ -172,7 +172,7 @@ __global__ void node(Node * nodeInfoList, int seed)
 
 				if((numberOfDays) - nodeInfoList[tx].dayInfected >= 5)
 				{
-					if( curand(&state) % 100 < (((NUMBER_OF_DAYS - numberOfDays) - nodeInfoList[tx].dayInfected)-5)*10 + 70)
+					if( curand(&state) % 100 < (((numberOfDays) - nodeInfoList[tx].dayInfected)-5)*10 + 70)
 						nodeInfoList[tx].nodeStatus = RECOVERED;	
 				}
 
@@ -181,7 +181,7 @@ __global__ void node(Node * nodeInfoList, int seed)
 
 				if((numberOfDays) - nodeInfoList[tx].dayInfected >= 3)
 				{
-					if( curand(&state) % 100 < (((NUMBER_OF_DAYS - numberOfDays) - nodeInfoList[tx].dayInfected)-3)*10 + 70)
+					if( curand(&state) % 100 < (((numberOfDays) - nodeInfoList[tx].dayInfected)-3)*10 + 70)
 						nodeInfoList[tx].nodeStatus = RECOVERED;	
 				}
 
