@@ -3,7 +3,7 @@
 __device__ int currentNumberOfNodes = INIT_NUMBER_OF_NODES;
 __device__ int numberOfDays = NUMBER_OF_DAYS;
 
-__device__ float numRem[NUMBER_OF_DAYS];
+__device__ int numRem[NUMBER_OF_DAYS];
 __device__ float numUnInf[NUMBER_OF_DAYS];
 __device__ float numLat[NUMBER_OF_DAYS];
 __device__ float numInf[NUMBER_OF_DAYS];
@@ -90,7 +90,7 @@ __global__ void node(Node * nodeInfoList, int seed)
     {
     
 	/* a chance for node deletion */
-    if ( (curand(&state) % 100) < 5 )
+    if ( (curand(&state) % 100) < 2 )
     {
     
     	//printf("\nRemoving Node %d",tx);
@@ -114,8 +114,6 @@ __global__ void node(Node * nodeInfoList, int seed)
 	
     if ( tx == 0) {
 
-   		// printf("\n \nDay %d Number of Nodes: %d\n",NUMBER_OF_DAYS - numberOfDays,currentNumberOfNodes);
-
     	numRem[NUMBER_OF_DAYS - numberOfDays] = currentNumberOfNodes;
   		numUnInf[NUMBER_OF_DAYS - numberOfDays] = 0;
   	 	numLat[NUMBER_OF_DAYS - numberOfDays] = 0;
@@ -124,35 +122,39 @@ __global__ void node(Node * nodeInfoList, int seed)
   	 	numAsym[NUMBER_OF_DAYS - numberOfDays] = 0;
   	 	numRec[NUMBER_OF_DAYS - numberOfDays] = 0;
 
-    	for(i = 0; i < MAX_NUMBER_OF_NODES; i++)
-  		{	
-	  		switch(nodeInfoList[i].nodeStatus)
-	  		{
-	  			case UNINFECTED:
-	  				numUnInf[NUMBER_OF_DAYS - numberOfDays]++;
-				break;
-				case LATENT:
-					numLat[NUMBER_OF_DAYS - numberOfDays]++;
-				break;
-				case INCUBATION:
-					numInc[NUMBER_OF_DAYS - numberOfDays]++;
-				break;
-				case INFECTIOUS:
-					numInf[NUMBER_OF_DAYS - numberOfDays]++;
-				break;
-				case ASYMPT:
-					numAsym[NUMBER_OF_DAYS - numberOfDays]++;
-				break;
-				case RECOVERED:
-					numRec[NUMBER_OF_DAYS - numberOfDays]++;
-				break;
-				default:
-					
-				break;
-	  		}
+	}
+
+	__syncthreads();
+    	
+	switch(nodeInfoList[tx].nodeStatus)
+	{
+		case UNINFECTED:
+			atomicAdd(numUnInf[NUMBER_OF_DAYS - numberOfDays],1);
+		break;
+		case LATENT:
+			atomicAdd(numLat[NUMBER_OF_DAYS - numberOfDays],1);
+		break;
+		case INCUBATION:
+			atomicAdd(numInc[NUMBER_OF_DAYS - numberOfDays],1);
+		break;
+		case INFECTIOUS:
+			atomicAdd(numInf[NUMBER_OF_DAYS - numberOfDays],1);
+		break;
+		case ASYMPT:
+			atomicAdd(numAsym[NUMBER_OF_DAYS - numberOfDays],1);
+		break;
+		case RECOVERED:
+			atomicAdd(numRec[NUMBER_OF_DAYS - numberOfDays],1);
+		break;
+		default:
+			
+		break;
+	}
   	
-  		}
+  	__syncthreads();
   	
+  	if ( tx == 0) {
+
 	  	numUnInf[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
 	  	numLat[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
 	  	numInf[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
@@ -166,14 +168,11 @@ __global__ void node(Node * nodeInfoList, int seed)
 	  	numInc[NUMBER_OF_DAYS - numberOfDays] *= 100;
 	  	numAsym[NUMBER_OF_DAYS - numberOfDays] *= 100;
 	  	numRec[NUMBER_OF_DAYS - numberOfDays] *= 100;
+
+	 }
 	  	
-	  //	printf("Number Uninfected: %f, Num Latent %f, Num Inf %f, Num Inc %f, Num Asym %f, Num Rec %f\n", numUnInf, numLat, numInf, numInc, numAsym, numRec);
-	  	
-
-   }
-
-    __syncthreads();
-
+	__syncthreads();	  
+  
     numberOfDays--;
 
     if(nodeInfoList[tx].isActive == 1)
@@ -234,7 +233,7 @@ __global__ void node(Node * nodeInfoList, int seed)
 	if(nodeInfoList[tx].isActive == 0) {
 	
 		/* a chance for node addition */
-		if ( (curand(&state) % 100) < 5 )
+		if ( (curand(&state) % 100) < 2 )
 		{
 			//printf("\nAdding Node %d", tx);
 		
@@ -348,19 +347,13 @@ int main(void)
 {
 
   Node * hostNodeInfoList = (Node *) malloc(MAX_NUMBER_OF_NODES*(sizeof(Node)));
- // int * hostNeighborIDs = (int *) malloc( (MAX_NUMBER_OF_NODES*MAX_NUMBER_OF_NEIGHBORS)*(sizeof(int)));
 
   Node * deviceNodeInfoList;
-//  int * deviceNeighborIDs;
  
   cudaMalloc( (void **) &deviceNodeInfoList,(MAX_NUMBER_OF_NODES)* sizeof(Node));
- // cudaMalloc( (void **) &deviceNeighborIDs,(MAX_NUMBER_OF_NODES*MAX_NUMBER_OF_NEIGHBORS)* sizeof(int));
  
   cudaMemcpy(deviceNodeInfoList, hostNodeInfoList, (MAX_NUMBER_OF_NODES) * sizeof(Node), cudaMemcpyHostToDevice); 
 
-  //for(i = 0; i < MAX_NUMBER_OF_NODES; i++)
-  // for(j = 0; j < MAX_NUMBER_OF_NEIGHBORS; j++)
-  //   printf("[%d][%d] = %d\n", i, j,neighborIDs[i][j]);
 
   dim3 DimGrid( (int) ceil(MAX_NUMBER_OF_NODES/512.0),1,1);
   dim3 DimBlock(512,1,1);
