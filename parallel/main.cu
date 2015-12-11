@@ -106,9 +106,9 @@ __global__ void node(Node * nodeInfoList, int seed)
 	
     if ( tx == 0) {
 
-    printf("\n \nDay %d Number of Nodes: %d\n",NUMBER_OF_DAYS - numberOfDays,currentNumberOfNodes);
+   		 printf("\n \nDay %d Number of Nodes: %d\n",NUMBER_OF_DAYS - numberOfDays,currentNumberOfNodes);
 
-	numUnInf = 0;
+  		numUnInf = 0;
   	 	numLat = 0;
   	 	numInf = 0;
   	 	numInc = 0;
@@ -116,7 +116,7 @@ __global__ void node(Node * nodeInfoList, int seed)
   	 	numRec = 0;
 
 
-    for(i = 0; i < MAX_NUMBER_OF_NODES; i++)
+    	for(i = 0; i < MAX_NUMBER_OF_NODES; i++)
   	{
   		  	
   		//printf("Node %d is ", i);
@@ -168,10 +168,12 @@ __global__ void node(Node * nodeInfoList, int seed)
   	numAsym *= 100;
   	numRec *= 100;
   	
-  	printf("Number Uninfected: %f, Num Latent %f, Num Inf %f, Num Inc %f, Num Asym %f, Num Rec %f", numUnInf, numLat, numInf, numInc, numAsym, numRec);
+  	printf("Number Uninfected: %f, Num Latent %f, Num Inf %f, Num Inc %f, Num Asym %f, Num Rec %f\n", numUnInf, numLat, numInf, numInc, numAsym, numRec);
   	
 
    }
+
+    __syncthreads();
 
     numberOfDays--;
 
