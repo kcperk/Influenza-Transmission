@@ -3,9 +3,9 @@
 #define _GRAPH_H_
 
 #include "adjList.h"
-#define NUMBER_OF_NODES 10
-#define MAX_NUMBER_OF_NODES 50
-#define MINIMUM_NUMBER_OF_NEIGHBORS 2
+#define NUMBER_OF_NODES 700
+#define MAX_NUMBER_OF_NODES 8192
+#define MINIMUM_NUMBER_OF_NEIGHBORS 5
 #define TOTAL_DAYS_RUN 30
 
 typedef struct

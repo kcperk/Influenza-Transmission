@@ -23,18 +23,7 @@ int main() {
 
 	DFSinfection();
 
-	//printGraph();
-
-
-	//removeNode(0);
-
-	//printGraph();
-
 	printf("\n");
-
-	//addNode();
-
-//	printGraph();
 
 	return 0;
 }
@@ -48,6 +37,7 @@ void DFSinfection() {
 	int currentTimeStamp = 0;
 	Stack * nodeStack = (Stack *) malloc(sizeof(Stack));
 	Stack * nextStack = (Stack *) malloc(sizeof(Stack));
+	Stack * tempStack;
 	Node * currentNode;
 	NeighborNode * currentNeighbor;
 
@@ -63,7 +53,7 @@ void DFSinfection() {
 
 		 if(currentNode != NULL) 
 		 {
-
+			
 			 if (currentNode->infected == 0)
 			 {
 
@@ -93,7 +83,7 @@ void DFSinfection() {
 
 			 	}
 
-			 }
+			 } 
 
 		}
 
@@ -103,13 +93,13 @@ void DFSinfection() {
 			check = updateSurvivors(currentTimeStamp);
 			currentTimeStamp++;
 
-			free(nodeStack);
+			tempStack = nodeStack;
 			nodeStack = nextStack;
+			nextStack = tempStack;
+
 
 			if(check != -1)
 				Stack_Push(nodeStack, check);
-
-			nextStack = (Stack *) malloc(sizeof(Stack));
 
 		}
 
@@ -117,6 +107,7 @@ void DFSinfection() {
 	}
 
 }
+
 
 int addNode(){
 
@@ -356,7 +347,6 @@ int updateSurvivors(int currentTimeStamp)
 	Node * currentNode = nodeList;
 	int chanceToBeCured;
 	int chanceToDie;
-	int chanceForBirth;
 	int res = -1;
 
 	while(currentNode != NULL) {
@@ -376,17 +366,13 @@ int updateSurvivors(int currentTimeStamp)
 				currentNode = currentNode->next;
 				continue;
 			}
-
+			
 		}
 
 		currentNode = currentNode->next;
 	}
 
-	chanceForBirth = rand() % 100;
-
-	if(chanceForBirth < 5)
-		res = addNode();
-
+	
 	return res;
 
 }

@@ -3,7 +3,7 @@
 
 typedef struct
 {
-    int    data[NUMBER_OF_NODES];
+    int    data[MAX_NUMBER_OF_NODES^30];
     int     topOfStack;
 
 } Stack;
@@ -16,9 +16,9 @@ void Stack_Init(Stack *S)
 
 void Stack_Push(Stack *S, int d)
 {
-    if(S->topOfStack == NUMBER_OF_NODES)
+    if(S->topOfStack == MAX_NUMBER_OF_NODES^30)
     {    
-        //printf("Error: stack full\n");
+        printf("Error: stack full\n");
         return;
     }
 
@@ -31,7 +31,7 @@ int Stack_Pop(Stack *S)
    int res;
 
     if (S->topOfStack == 0) {
-        //printf("Error: stack empty\n");
+        printf("Error: stack empty\n");
         return;
     } 
 
