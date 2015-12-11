@@ -3,6 +3,7 @@
 __device__ int currentNumberOfNodes = INIT_NUMBER_OF_NODES;
 __device__ int numberOfDays = NUMBER_OF_DAYS;
 
+__device__ float numRem[NUMBER_OF_DAYS];
 __device__ float numUnInf[NUMBER_OF_DAYS];
 __device__ float numLat[NUMBER_OF_DAYS];
 __device__ float numInf[NUMBER_OF_DAYS];
@@ -115,6 +116,7 @@ __global__ void node(Node * nodeInfoList, int seed)
 
    		// printf("\n \nDay %d Number of Nodes: %d\n",NUMBER_OF_DAYS - numberOfDays,currentNumberOfNodes);
 
+    	numRem[NUMBER_OF_DAYS - numberOfDays] = currentNumberOfNodes;
   		numUnInf[NUMBER_OF_DAYS - numberOfDays] = 0;
   	 	numLat[NUMBER_OF_DAYS - numberOfDays] = 0;
   	 	numInf[NUMBER_OF_DAYS - numberOfDays] = 0;
@@ -368,6 +370,10 @@ int main(void)
   cudaDeviceSynchronize();
 
   node<<<DimGrid,DimBlock>>>(deviceNodeInfoList, time(NULL));
+
+  cudaDeviceSynchronize();
+
+  printingRes<<<1,1>>>();
 
   cudaDeviceSynchronize();
 
