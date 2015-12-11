@@ -331,7 +331,7 @@ __global__ void printingRes()
 
 		while(numberOfDays > 0) {
 
-			printf("\n \nDay %d Number of Nodes: %d\n",NUMBER_OF_DAYS - numberOfDays,currentNumberOfNodes);
+			printf("\n \nDay %d Number of Nodes: %f\n",NUMBER_OF_DAYS - numberOfDays,numRem[NUMBER_OF_DAYS - numberOfDays]);
 
 			printf("Number Uninfected: %f, Num Latent %f, Num Inf %f, Num Inc %f, Num Asym %f, Num Rec %f\n", numUnInf[NUMBER_OF_DAYS - numberOfDays], numLat[NUMBER_OF_DAYS - numberOfDays], numInf[NUMBER_OF_DAYS - numberOfDays], numInc[NUMBER_OF_DAYS - numberOfDays], numAsym[NUMBER_OF_DAYS - numberOfDays], numRec[NUMBER_OF_DAYS - numberOfDays]);
 	  	
@@ -362,7 +362,7 @@ int main(void)
   // for(j = 0; j < MAX_NUMBER_OF_NEIGHBORS; j++)
   //   printf("[%d][%d] = %d\n", i, j,neighborIDs[i][j]);
 
-  dim3 DimGrid(ceil(MAX_NUMBER_OF_NODES/512.0),1,1);
+  dim3 DimGrid( (int) ceil(MAX_NUMBER_OF_NODES/512.0),1,1);
   dim3 DimBlock(512,1,1);
 
   initGraph<<<DimGrid,DimBlock>>>(deviceNodeInfoList, time(NULL));
