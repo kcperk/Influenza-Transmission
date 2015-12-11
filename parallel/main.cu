@@ -202,7 +202,7 @@ __global__ void node(Node * nodeInfoList, int seed)
 	if(nodeInfoList[tx].isActive == 0) {
 	
 		// a chance for node addition 
-		if ( (curand(&state) % 600) < 2 )
+		if ( ( (float) (curand(&state) % 600) < 2.0 ) )
 		{
 			nodeInfoList[tx].isActive = 1;
 			nodeInfoList[tx].nodeStatus = UNINFECTED;
@@ -249,23 +249,31 @@ __global__ void initGraph(Node * nodeInfoList, int seed) {
 
   	if(tx < INIT_NUMBER_OF_NODES) {
   		nodeInfoList[tx].isActive = 1;
-  		nodeInfoList[tx].numberOfNeighbors = (curand(&state) % (MAX_NUMBER_OF_NEIGHBORS + 1));
+  		nodeInfoList[tx].numberOfNeighbors = (curand(&state) % (MAX_NUMBER_OF_NEIGHBORS));
+  		//printf("Index : %d, number %d\n", tx, nodeInfoList[tx].numberOfNeighbors);
 
   		for(j = 0; j < MAX_NUMBER_OF_NODES; j++)
   			nodeInfoList[tx].neighborId[j] = -1;
 
-  		for(j = 0; j < MAX_NUMBER_OF_NEIGHBORS; j++)
+  		for(j = 0; j < nodeInfoList[tx].numberOfNeighbors; j++)
 	    {
-	  		do {
-	  			index = curand(&state) % INIT_NUMBER_OF_NODES;
+	    	//if( j < nodeInfoList[tx].numberOfNeighbors) {
+		  	
+		  		do {
+		  			index = curand(&state) % INIT_NUMBER_OF_NODES;
 
-	  			if(nodeInfoList[tx].neighborId[index] != -1)
-	  				index = -1;
-	      		
-	      	} while (index == -1);
+		  			if(nodeInfoList[tx].neighborId[index] != -1)
+		  				index = -1;
+			  		
+			  	} while (index == -1);
 
-	      	nodeInfoList[tx].neighborId[index] = 1;
-	    } 
+			  	nodeInfoList[tx].neighborId[index] = 1;
+	      	
+	      	//}
+	    }
+	    
+	    //	printf("Index : %d, number %d\n", tx, nodeInfoList[tx].numberOfNeighbors);
+ 
 
   	} else {
   		nodeInfoList[tx].isActive = 0;
@@ -340,7 +348,6 @@ __global__ void printingRes()
 // main routine that executes on the host
 int main(void)
 {
-
   Node * hostNodeInfoList = (Node *) malloc(MAX_NUMBER_OF_NODES*(sizeof(Node)));
 
   Node * deviceNodeInfoList;
