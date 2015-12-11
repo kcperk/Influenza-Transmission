@@ -14,7 +14,7 @@ __device__ float numRec[NUMBER_OF_DAYS];
 // Kernel that executes on the CUDA device
 __global__ void node(Node * nodeInfoList, int seed)
 {
-  /* threadIdx represents the ID of the thread */
+  /* threadIdx represents the ID of the node */
   int i,j;
   int tx = threadIdx.x + blockDim.x * blockIdx.x;
   int numberOfNeighborsToLookAt;
@@ -89,7 +89,7 @@ __global__ void node(Node * nodeInfoList, int seed)
     {
     
 		// a chance for node deletion
-	    if ( (curand(&state) % 800) < 2 )
+	    if ( (float) (curand(&state) % 800) < 2 )
 	    {
 	    	nodeInfoList[tx].isActive = 0;
 	    	nodeInfoList[tx].id = 0;
@@ -250,15 +250,16 @@ __global__ void initGraph(Node * nodeInfoList, int seed) {
   	if(tx < INIT_NUMBER_OF_NODES) {
   		nodeInfoList[tx].isActive = 1;
   		nodeInfoList[tx].numberOfNeighbors = (curand(&state) % (MAX_NUMBER_OF_NEIGHBORS));
-  		//printf("Index : %d, number %d\n", tx, nodeInfoList[tx].numberOfNeighbors);
-
+  		
+  		if (nodeInfoList[tx].numberOfNeighbors < MIN_NUMBER_OF_NEIGHBORS)
+  			nodeInfoList[tx].numberOfNeighbors = MIN_NUMBER_OF_NEIGHBORS;
+  		
   		for(j = 0; j < MAX_NUMBER_OF_NODES; j++)
   			nodeInfoList[tx].neighborId[j] = -1;
 
-  		for(j = 0; j < nodeInfoList[tx].numberOfNeighbors; j++)
+  		for(j = 0; j < MAX_NUMBER_OF_NEIGHBORS; j++)
 	    {
-	    	//if( j < nodeInfoList[tx].numberOfNeighbors) {
-		  	
+	    	
 		  		do {
 		  			index = curand(&state) % INIT_NUMBER_OF_NODES;
 
@@ -269,12 +270,10 @@ __global__ void initGraph(Node * nodeInfoList, int seed) {
 
 			  	nodeInfoList[tx].neighborId[index] = 1;
 	      	
-	      	//}
+	      	
 	    }
 	    
-	    //	printf("Index : %d, number %d\n", tx, nodeInfoList[tx].numberOfNeighbors);
- 
-
+	 
   	} else {
   		nodeInfoList[tx].isActive = 0;
   		nodeInfoList[tx].numberOfNeighbors = -1;

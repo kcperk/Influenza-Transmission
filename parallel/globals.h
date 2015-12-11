@@ -8,13 +8,13 @@
 #include <curand_kernel.h>
 
 
-#define INIT_NUMBER_OF_NODES 10
+#define INIT_NUMBER_OF_NODES 7000
 
 /* make power of 2 */
-#define MAX_NUMBER_OF_NODES 30
+#define MAX_NUMBER_OF_NODES 8192
 
-#define MIN_NUMBER_OF_NEIGHBORS 2
-#define MAX_NUMBER_OF_NEIGHBORS 5
+#define MIN_NUMBER_OF_NEIGHBORS 20
+#define MAX_NUMBER_OF_NEIGHBORS 100
 
 #define MAX_X 200
 #define MAX_Y 200
