@@ -1,7 +1,15 @@
 #include "globals.h"
 
 __device__ int currentNumberOfNodes = INIT_NUMBER_OF_NODES;
-__device__ int numberOfDays = NUMBER_OF_DAYS; 
+__device__ int numberOfDays = NUMBER_OF_DAYS;
+
+__device__ float numUnInf[NUMBER_OF_DAYS];
+__device__ float numLat[NUMBER_OF_DAYS];
+__device__ float numInf[NUMBER_OF_DAYS];
+__device__ float numInc[NUMBER_OF_DAYS];
+__device__ float numAsym[NUMBER_OF_DAYS];
+__device__ float numRec[NUMBER_OF_DAYS];
+
 
 // Kernel that executes on the CUDA device
 __global__ void node(Node * nodeInfoList, int seed)
@@ -12,8 +20,7 @@ __global__ void node(Node * nodeInfoList, int seed)
   int numberOfNeighborsToLookAt;
   int neighborIndex, index;
   
-  float numUnInf, numLat, numInf, numInc, numAsym, numRec;
-
+  
   int storedNodeStatus[MAX_NUMBER_OF_NODES];
   curandState_t state;
 
@@ -106,70 +113,60 @@ __global__ void node(Node * nodeInfoList, int seed)
 	
     if ( tx == 0) {
 
-   		 printf("\n \nDay %d Number of Nodes: %d\n",NUMBER_OF_DAYS - numberOfDays,currentNumberOfNodes);
+   		// printf("\n \nDay %d Number of Nodes: %d\n",NUMBER_OF_DAYS - numberOfDays,currentNumberOfNodes);
 
-  		numUnInf = 0;
-  	 	numLat = 0;
-  	 	numInf = 0;
-  	 	numInc = 0;
-  	 	numAsym = 0;
-  	 	numRec = 0;
-
+  		numUnInf[NUMBER_OF_DAYS - numberOfDays] = 0;
+  	 	numLat[NUMBER_OF_DAYS - numberOfDays] = 0;
+  	 	numInf[NUMBER_OF_DAYS - numberOfDays] = 0;
+  	 	numInc[NUMBER_OF_DAYS - numberOfDays] = 0;
+  	 	numAsym[NUMBER_OF_DAYS - numberOfDays] = 0;
+  	 	numRec[NUMBER_OF_DAYS - numberOfDays] = 0;
 
     	for(i = 0; i < MAX_NUMBER_OF_NODES; i++)
-  	{
-  		  	
-  		//printf("Node %d is ", i);
-  		
-  		/*
-  		if(nodeInfoList[i].isActive) 			
- 	 		printf("active and ");
- 	 	else
- 	 		printf("inactive and ");		
-  		*/
-  		switch(nodeInfoList[i].nodeStatus)
-  		{
-  			case UNINFECTED:
-  				numUnInf++;
-			break;
-			case LATENT:
-				numLat++;
-			break;
-			case INCUBATION:
-				numInc++;
-			break;
-			case INFECTIOUS:
-				numInf++;
-			break;
-			case ASYMPT:
-				numAsym++;
-			break;
-			case RECOVERED:
-				numRec++;
-			break;
-			default:
-				
-			break;
+  		{	
+	  		switch(nodeInfoList[i].nodeStatus)
+	  		{
+	  			case UNINFECTED:
+	  				numUnInf[NUMBER_OF_DAYS - numberOfDays]++;
+				break;
+				case LATENT:
+					numLat[NUMBER_OF_DAYS - numberOfDays]++;
+				break;
+				case INCUBATION:
+					numInc[NUMBER_OF_DAYS - numberOfDays]++;
+				break;
+				case INFECTIOUS:
+					numInf[NUMBER_OF_DAYS - numberOfDays]++;
+				break;
+				case ASYMPT:
+					numAsym[NUMBER_OF_DAYS - numberOfDays]++;
+				break;
+				case RECOVERED:
+					numRec[NUMBER_OF_DAYS - numberOfDays]++;
+				break;
+				default:
+					
+				break;
+	  		}
+  	
   		}
   	
-  	}
-  	
-  	numUnInf /= MAX_NUMBER_OF_NODES;
-  	numLat /= MAX_NUMBER_OF_NODES;
-  	numInf /= MAX_NUMBER_OF_NODES;
-  	numInc /= MAX_NUMBER_OF_NODES;
-  	numAsym /= MAX_NUMBER_OF_NODES;
-  	numRec /= MAX_NUMBER_OF_NODES;
-  	
-  	numUnInf *= 100;
-  	numLat *= 100;
-  	numInf *= 100;
-  	numInc *= 100;
-  	numAsym *= 100;
-  	numRec *= 100;
-  	
-  	printf("Number Uninfected: %f, Num Latent %f, Num Inf %f, Num Inc %f, Num Asym %f, Num Rec %f\n", numUnInf, numLat, numInf, numInc, numAsym, numRec);
-  	
+	  	numUnInf[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
+	  	numLat[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
+	  	numInf[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
+	  	numInc[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
+	  	numAsym[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
+	  	numRec[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
+	  	
+	  	numUnInf[NUMBER_OF_DAYS - numberOfDays] *= 100;
+	  	numLat[NUMBER_OF_DAYS - numberOfDays] *= 100;
+	  	numInf[NUMBER_OF_DAYS - numberOfDays] *= 100;
+	  	numInc[NUMBER_OF_DAYS - numberOfDays] *= 100;
+	  	numAsym[NUMBER_OF_DAYS - numberOfDays] *= 100;
+	  	numRec[NUMBER_OF_DAYS - numberOfDays] *= 100;
+	  	
+	  //	printf("Number Uninfected: %f, Num Latent %f, Num Inf %f, Num Inc %f, Num Asym %f, Num Rec %f\n", numUnInf, numLat, numInf, numInc, numAsym, numRec);
+	  	
 
    }
 
@@ -323,6 +320,26 @@ __global__ void initGraph(Node * nodeInfoList, int seed) {
 
 }
 
+__global__ void printingRes() 
+{
+	int numberOfDays = 30;
+
+	if(threadIdx.x == 0)
+	{
+
+		while(numberOfDays > 0) {
+
+			printf("\n \nDay %d Number of Nodes: %d\n",NUMBER_OF_DAYS - numberOfDays,currentNumberOfNodes);
+
+			printf("Number Uninfected: %f, Num Latent %f, Num Inf %f, Num Inc %f, Num Asym %f, Num Rec %f\n", numUnInf[NUMBER_OF_DAYS - numberOfDays], numLat[NUMBER_OF_DAYS - numberOfDays], numInf[NUMBER_OF_DAYS - numberOfDays], numInc[NUMBER_OF_DAYS - numberOfDays], numAsym[NUMBER_OF_DAYS - numberOfDays], numRec[NUMBER_OF_DAYS - numberOfDays]);
+	  	
+			numberOfDays--;
+
+		}
+
+	}
+
+}
 
 // main routine that executes on the host
 int main(void)
