@@ -89,89 +89,56 @@ __global__ void node(Node * nodeInfoList, int seed)
     if(nodeInfoList[tx].isActive == 1)
     {
     
-	/* a chance for node deletion */
-    if ( (curand(&state) % 100) < 2 )
-    {
-    
-    	//printf("\nRemoving Node %d",tx);
-    
-    	nodeInfoList[tx].isActive = 0;
-    	nodeInfoList[tx].id = 0;
-		nodeInfoList[tx].nodeStatus = UNINFECTED;
+		/* a chance for node deletion */
+	    if ( (curand(&state) % 100) < 2 )
+	    {
+	    
+	    	//printf("\nRemoving Node %d",tx);
+	    
+	    	nodeInfoList[tx].isActive = 0;
+	    	nodeInfoList[tx].id = 0;
+			nodeInfoList[tx].nodeStatus = UNINFECTED;
 
-    	for(i = 0; i < MAX_NUMBER_OF_NEIGHBORS; i++)
-    		nodeInfoList[tx].neighborId[i] = -1;
+	    	for(i = 0; i < MAX_NUMBER_OF_NEIGHBORS; i++)
+	    		nodeInfoList[tx].neighborId[i] = -1;
 
-    	nodeInfoList[tx].numberOfNeighbors = 0;
-    	
-    	atomicAdd(&currentNumberOfNodes,-1);
+	    	nodeInfoList[tx].numberOfNeighbors = 0;
+	    	
+	    	atomicAdd(&currentNumberOfNodes,-1);
 
-    }
+	    }
 
 	}
 
 	__syncthreads();
 	
-    if ( tx == 0) {
-
-    	numRem[NUMBER_OF_DAYS - numberOfDays] = currentNumberOfNodes;
-  		numUnInf[NUMBER_OF_DAYS - numberOfDays] = 0;
-  	 	numLat[NUMBER_OF_DAYS - numberOfDays] = 0;
-  	 	numInf[NUMBER_OF_DAYS - numberOfDays] = 0;
-  	 	numInc[NUMBER_OF_DAYS - numberOfDays] = 0;
-  	 	numAsym[NUMBER_OF_DAYS - numberOfDays] = 0;
-  	 	numRec[NUMBER_OF_DAYS - numberOfDays] = 0;
-
-	}
-
-	__syncthreads();
-    	
+   	
 	switch(nodeInfoList[tx].nodeStatus)
 	{
 		case UNINFECTED:
-			atomicAdd(numUnInf[NUMBER_OF_DAYS - numberOfDays],1);
+			atomicAdd(&numUnInf[NUMBER_OF_DAYS - numberOfDays],1);
 		break;
 		case LATENT:
-			atomicAdd(numLat[NUMBER_OF_DAYS - numberOfDays],1);
+			atomicAdd(&numLat[NUMBER_OF_DAYS - numberOfDays],1);
 		break;
 		case INCUBATION:
-			atomicAdd(numInc[NUMBER_OF_DAYS - numberOfDays],1);
+			atomicAdd(&numInc[NUMBER_OF_DAYS - numberOfDays],1);
 		break;
 		case INFECTIOUS:
-			atomicAdd(numInf[NUMBER_OF_DAYS - numberOfDays],1);
+			atomicAdd(&numInf[NUMBER_OF_DAYS - numberOfDays],1);
 		break;
 		case ASYMPT:
-			atomicAdd(numAsym[NUMBER_OF_DAYS - numberOfDays],1);
+			atomicAdd(&numAsym[NUMBER_OF_DAYS - numberOfDays],1);
 		break;
 		case RECOVERED:
-			atomicAdd(numRec[NUMBER_OF_DAYS - numberOfDays],1);
+			atomicAdd(&numRec[NUMBER_OF_DAYS - numberOfDays],1);
 		break;
 		default:
 			
 		break;
 	}
   	
-  	__syncthreads();
-  	
-  	if ( tx == 0) {
-
-	  	numUnInf[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
-	  	numLat[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
-	  	numInf[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
-	  	numInc[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
-	  	numAsym[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
-	  	numRec[NUMBER_OF_DAYS - numberOfDays] /= MAX_NUMBER_OF_NODES;
-	  	
-	  	numUnInf[NUMBER_OF_DAYS - numberOfDays] *= 100;
-	  	numLat[NUMBER_OF_DAYS - numberOfDays] *= 100;
-	  	numInf[NUMBER_OF_DAYS - numberOfDays] *= 100;
-	  	numInc[NUMBER_OF_DAYS - numberOfDays] *= 100;
-	  	numAsym[NUMBER_OF_DAYS - numberOfDays] *= 100;
-	  	numRec[NUMBER_OF_DAYS - numberOfDays] *= 100;
-
-	 }
-	  	
-	__syncthreads();	  
+  	__syncthreads();  
   
     numberOfDays--;
 
@@ -311,6 +278,16 @@ __global__ void initGraph(Node * nodeInfoList, int seed) {
   		nodeInfoList[tx].nodeStatus = LATENT;
   		nodeInfoList[tx].dayInfected = 0;
 
+  		for(j = 0; j < NUMBER_OF_DAYS; j++) {
+	    	numRem[j] = 0;
+	  		numUnInf[j] = 0;
+	  	 	numLat[j] = 0;
+	  	 	numInf[j] = 0;
+	  	 	numInc[j] = 0;
+	  	 	numAsym[j] = 0;
+	  	 	numRec[j] = 0;
+		}
+
   	} else {
 
   		nodeInfoList[tx].nodeStatus = UNINFECTED;
@@ -323,18 +300,34 @@ __global__ void initGraph(Node * nodeInfoList, int seed) {
 
 __global__ void printingRes() 
 {
-	int numberOfDays = 30;
+	int lNumberOfDays = NUMBER_OF_DAYS;
 
 	if(threadIdx.x == 0)
 	{
 
-		while(numberOfDays > 0) {
+		while(lNumberOfDays > 0) {
 
-			printf("\n \nDay %d Number of Nodes: %f\n",NUMBER_OF_DAYS - numberOfDays,numRem[NUMBER_OF_DAYS - numberOfDays]);
-
-			printf("Number Uninfected: %f, Num Latent %f, Num Inf %f, Num Inc %f, Num Asym %f, Num Rec %f\n", numUnInf[NUMBER_OF_DAYS - numberOfDays], numLat[NUMBER_OF_DAYS - numberOfDays], numInf[NUMBER_OF_DAYS - numberOfDays], numInc[NUMBER_OF_DAYS - numberOfDays], numAsym[NUMBER_OF_DAYS - numberOfDays], numRec[NUMBER_OF_DAYS - numberOfDays]);
+			numUnInf[NUMBER_OF_DAYS - lNumberOfDays] /= MAX_NUMBER_OF_NODES;
+	  		numLat[NUMBER_OF_DAYS - lNumberOfDays] /= MAX_NUMBER_OF_NODES;
+	 	 	numInf[NUMBER_OF_DAYS - lNumberOfDays] /= MAX_NUMBER_OF_NODES;
+	 	 	numInc[NUMBER_OF_DAYS - lNumberOfDays] /= MAX_NUMBER_OF_NODES;
+		  	numAsym[NUMBER_OF_DAYS - lNumberOfDays] /= MAX_NUMBER_OF_NODES;
+		  	numRec[NUMBER_OF_DAYS - lNumberOfDays] /= MAX_NUMBER_OF_NODES;
 	  	
-			numberOfDays--;
+		  	numUnInf[NUMBER_OF_DAYS - numberOfDays] *= 100;
+	  		numLat[NUMBER_OF_DAYS - numberOfDays] *= 100;
+		  	numInf[NUMBER_OF_DAYS - numberOfDays] *= 100;
+		  	numInc[NUMBER_OF_DAYS - numberOfDays] *= 100;
+		  	numAsym[NUMBER_OF_DAYS - numberOfDays] *= 100;
+		  	numRec[NUMBER_OF_DAYS - numberOfDays] *= 100;
+
+			printf("\n \nDay %d Number of Nodes: %d\n",NUMBER_OF_DAYS - lNumberOfDays,numRem[NUMBER_OF_DAYS - lNumberOfDays]);
+
+			printf("Number Uninfected: %f, Num Latent %f, Num Inf %f, Num Inc %f, Num Asym %f, Num Rec %f\n", numUnInf[NUMBER_OF_DAYS - lNumberOfDays],
+			 numLat[NUMBER_OF_DAYS - lNumberOfDays], numInf[NUMBER_OF_DAYS - lNumberOfDays], numInc[NUMBER_OF_DAYS - lNumberOfDays], numAsym[NUMBER_OF_DAYS - lNumberOfDays],
+			  numRec[NUMBER_OF_DAYS - lNumberOfDays]);
+	  	
+			lNumberOfDays--;
 
 		}
 
