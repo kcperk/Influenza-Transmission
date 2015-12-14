@@ -28,3 +28,6 @@ The goal of this projection is to create an Influenza transimssion simulation us
 
 * Modify "globals.h" to change test enviroment
 
+###Project Demo Slides
+https://docs.google.com/presentation/d/183-ySmiMNN7_n-yjatiQjgnRePPXslnRpVPjYBC4BcI/edit?usp=sharing
+
